@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Flappy Bird Standar</title>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    background: #70c5ce;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    touch-action: manipulation;
+  }
+  canvas {
+    display: block;
+    background: #70c5ce;
+  }
+  #score, #message {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    z-index: 10;
+  }
+  #score {
+    top: 20px;
+    font-size: 24px;
+    color: white;
+  }
+  #message {
+    top: 40%;
+    font-size: 32px;
+    color: white;
+  }
+</style>
+</head>
+<body>
+<div id="score">Score: 0</div>
+<div id="message">Tap anywhere to Start!</div>
+<canvas id="gameCanvas" width="360" height="640"></canvas>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+// Load burung
+const birdImg = new Image();
+birdImg.src = "muka.png"; // nama file burung kamu
+let birdReady = false;
+birdImg.onload = () => { birdReady = true; };
+
+// Bird
+let bird = {
+  x: 60,
+  y: canvas.height / 2,
+  width: 40,
+  height: 40,
+  gravity: 0.6,
+  lift: -12,
+  velocity: 0
+};
+
+// Pipes
+let pipes = [];
+let pipeWidth = 50;
+let pipeGap = 150;
+let frame = 0;
+let score = 0;
+let gameStarted = false;
+
+// Buat pipa baru
+function createPipe() {
+  let topHeight = Math.random() * (canvas.height - pipeGap - 50) + 20;
+  let bottomHeight = canvas.height - pipeGap - topHeight;
+  pipes.push({ x: canvas.width, top: topHeight, bottom: bottomHeight, width: pipeWidth });
+}
+
+// Reset game
+function resetGame() {
+  bird.y = canvas.height / 2;
+  bird.velocity = 0;
+  pipes = [];
+  frame = 0;
+  score = 0;
+  document.getElementById("score").innerText = "Score: 0";
+  document.getElementById("message").innerText = "Tap anywhere to Start!";
+  gameStarted = false;
+}
+
+// Update game
+function update() {
+  if (!gameStarted) return;
+
+  bird.velocity += bird.gravity;
+  bird.y += bird.velocity;
+
+  // Tabrakan atas / bawah
+  if (bird.y + bird.height > canvas.height || bird.y < 0) {
+    alert("Game Over! Score: " + score);
+    resetGame();
+  }
+
+  if (frame % 90 === 0) createPipe();
+
+  for (let i = 0; i < pipes.length; i++) {
+    pipes[i].x -= 3;
+
+    // Tabrakan pipa
+    if (
+      bird.x < pipes[i].x + pipes[i].width &&
+      bird.x + bird.width > pipes[i].x &&
+      (bird.y < pipes[i].top || bird.y + bird.height > canvas.height - pipes[i].bottom)
+    ) {
+      alert("Game Over! Score: " + score);
+      resetGame();
+    }
+
+    // Score
+    if (pipes[i].x + pipes[i].width === bird.x) {
+      score++;
+      document.getElementById("score").innerText = "Score: " + score;
+    }
+  }
+
+  pipes = pipes.filter(p => p.x + p.width > 0);
+  frame++;
+}
+
+// Render
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (birdReady) {
+    ctx.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
+  } else {
+    ctx.fillStyle = "yellow";
+    ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
+  }
+
+  // Pipa
+  ctx.fillStyle = "green";
+  for (let pipe of pipes) {
+    ctx.fillRect(pipe.x, 0, pipe.width, pipe.top);
+    ctx.fillRect(pipe.x, canvas.height - pipe.bottom, pipe.width, pipe.bottom);
+  }
+}
+
+// Game loop
+function loop() {
+  update();
+  render();
+  requestAnimationFrame(loop);
+}
+
+// Tap untuk mulai & terbang
+canvas.addEventListener("touchstart", () => {
+  if (!gameStarted) {
+    gameStarted = true;
+    document.getElementById("message").innerText = "";
+  }
+  bird.velocity = bird.lift;
+});
+
+// Mulai loop
+function startGame() {
+  if (birdReady) loop();
+  else setTimeout(startGame, 50);
+}
+
+startGame();
+</script>
+</body>
+</html>
