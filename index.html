@@ -42,7 +42,7 @@
 </head>
 <body>
 <div id="score">Score: 0</div>
-<div id="message">Tap anywhere to Start!</div>
+<div id="message">Tap untuk Start!</div>
 <canvas id="gameCanvas" width="360" height="640"></canvas>
 
 <script>
@@ -51,7 +51,7 @@ const ctx = canvas.getContext("2d");
 
 // Load burung
 const birdImg = new Image();
-birdImg.src = "muka.png"; // nama file burung kamu
+birdImg.src = "muka.png"; // ganti dengan nama file burung
 let birdReady = false;
 birdImg.onload = () => { birdReady = true; };
 
@@ -78,7 +78,7 @@ let gameStarted = false;
 function createPipe() {
   let topHeight = Math.random() * (canvas.height - pipeGap - 50) + 20;
   let bottomHeight = canvas.height - pipeGap - topHeight;
-  pipes.push({ x: canvas.width, top: topHeight, bottom: bottomHeight, width: pipeWidth });
+  pipes.push({ x: canvas.width, top: topHeight, bottom: bottomHeight, width: pipeWidth, passed: false });
 }
 
 // Reset game
@@ -89,7 +89,7 @@ function resetGame() {
   frame = 0;
   score = 0;
   document.getElementById("score").innerText = "Score: 0";
-  document.getElementById("message").innerText = "Tap anywhere to Start!";
+  document.getElementById("message").innerText = "Tap untuk Start!";
   gameStarted = false;
 }
 
@@ -102,8 +102,9 @@ function update() {
 
   // Tabrakan atas / bawah
   if (bird.y + bird.height > canvas.height || bird.y < 0) {
-    alert("Game Over! Score: " + score);
-    resetGame();
+    document.getElementById("message").innerText = "Game Over! Tap untuk restart";
+    gameStarted = false;
+    return;
   }
 
   if (frame % 90 === 0) createPipe();
@@ -117,18 +118,21 @@ function update() {
       bird.x + bird.width > pipes[i].x &&
       (bird.y < pipes[i].top || bird.y + bird.height > canvas.height - pipes[i].bottom)
     ) {
-      alert("Game Over! Score: " + score);
-      resetGame();
+      document.getElementById("message").innerText = "Game Over! Tap untuk restart";
+      gameStarted = false;
+      return;
     }
 
-    // Score
-    if (pipes[i].x + pipes[i].width === bird.x) {
+    // Score jika pipa sudah lewat burung
+    if (!pipes[i].passed && pipes[i].x + pipes[i].width < bird.x) {
       score++;
+      pipes[i].passed = true;
       document.getElementById("score").innerText = "Score: " + score;
     }
   }
 
   pipes = pipes.filter(p => p.x + p.width > 0);
+
   frame++;
 }
 
@@ -136,6 +140,7 @@ function update() {
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  // Draw bird
   if (birdReady) {
     ctx.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
   } else {
@@ -143,7 +148,7 @@ function render() {
     ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
   }
 
-  // Pipa
+  // Draw pipes
   ctx.fillStyle = "green";
   for (let pipe of pipes) {
     ctx.fillRect(pipe.x, 0, pipe.width, pipe.top);
@@ -161,6 +166,7 @@ function loop() {
 // Tap untuk mulai & terbang
 canvas.addEventListener("touchstart", () => {
   if (!gameStarted) {
+    resetGame(); // reset saat tap jika game belum berjalan
     gameStarted = true;
     document.getElementById("message").innerText = "";
   }
